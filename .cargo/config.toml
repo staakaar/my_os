@@ -1,0 +1,4 @@
+# in .cargo/config.toml
+
+[target.'cfg(target_os = "macos")']
+rustflags = ["-C", "link-args=-e __start -static -nostartfiles"]
