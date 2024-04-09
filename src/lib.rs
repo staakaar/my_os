@@ -2,11 +2,17 @@
 #![cfg_attr(test, no_main)]
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
+#![feature(abi_x86_interrupt)]
 
 use core::panic::PanicInfo;
 
+pub mod interrupts;
 mod vga_buffer;
 mod serial;
+
+pub fn init() {
+    interrupts::init_idt();
+}
 
 #[derive(Debug, CLone, Copy, PartialEq, Eq)]
 #[repr(u32)]
@@ -54,6 +60,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
 #[cfg(test)]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
+    init();
     test_main();
     loop {}
 }

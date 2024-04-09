@@ -34,9 +34,16 @@ pub extern "C" fn _start() -> ! {
 
     println!("Hello World {}", "!");
 
+    // 割り込み例外ハンドラーの初期化
+    my_os::init();
+
+    // ブレイクポイント
+    x86_64::instructions::interrupts::int3();
+
     #[cfg(test)]
     test_main();
 
+    println!("It did not crash!");
     loop {}
 }
 
