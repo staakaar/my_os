@@ -37,8 +37,18 @@ pub extern "C" fn _start() -> ! {
     // 割り込み例外ハンドラーの初期化
     my_os::init();
 
+    unsafe {
+        *(0xdeadbeef as *mut u8) = 42;
+    };
+
     // ブレイクポイント
     x86_64::instructions::interrupts::int3();
+
+    // fn stack_overflow() {
+    //     stack_overflow();
+    // }
+
+    // stack_overflow();
 
     #[cfg(test)]
     test_main();
