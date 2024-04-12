@@ -12,6 +12,7 @@ mod vga_buffer;
 mod serial;
 
 pub fn init() {
+    gdt.init();
     interrupts::init_idt();
 }
 
