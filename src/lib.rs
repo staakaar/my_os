@@ -14,6 +14,8 @@ mod serial;
 pub fn init() {
     gdt.init();
     interrupts::init_idt();
+    unsafe { interrupts::PICS.lock().initialize() };
+    x86_64::instructions::interrupts::enable();
 }
 
 #[derive(Debug, CLone, Copy, PartialEq, Eq)]
@@ -21,6 +23,12 @@ pub fn init() {
 pub enum QemuExitCode {
     Success = 0x10,
     Failed = 0x11,
+}
+
+pub fn hlt_loop() -> ! {
+    loop {
+        x86_64::instructions::hlt();
+    }
 }
 
 pub fn exit_qemu(exit_code: QemuExitCode) {
