@@ -37,9 +37,13 @@ pub extern "C" fn _start() -> ! {
     // 割り込み例外ハンドラーの初期化
     my_os::init();
 
-    unsafe {
-        *(0xdeadbeef as *mut u8) = 42;
-    };
+    use x86_64::registers::control::Cr3;
+
+    let (level_4_page_table, _) = Cr3::read();
+    println!("Level 4 page table at: {:?}", level_4_page_table.start_address);
+
+    let ptr = 0xdeadbeaf as *mut u8;
+    unsafe { *ptr = 42; }
 
     // ブレイクポイント
     x86_64::instructions::interrupts::int3();
