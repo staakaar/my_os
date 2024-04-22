@@ -4,10 +4,12 @@
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
+use alloc::boxed::Box;
 use core::panic::PanicInfo;
 use bootloader::{BootInfo, entry_point};
-use my_os::{memory::{self, BootInfoFrameAllocator}, println};
+use my_os::{allocator, memory::{self, BootInfoFrameAllocator}, println};
 use x86_64::structures::paging::PageTable;
+extern crate alloc;
 
 entry_point!(kernel_main);
 
@@ -61,6 +63,10 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         let phys = mapper.translate_addr(virt);
         println!("{:?} -> {:?}", virt, phys);
     }
+
+    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
+
+    let x = Box::new(41);
 
     #[cfg(test)]
     test_main();
