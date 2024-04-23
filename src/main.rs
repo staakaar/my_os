@@ -4,7 +4,7 @@
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-use alloc::boxed::Box;
+use alloc::{boxed::Box, vec, vec::Vec, rc::Rc};
 use core::panic::PanicInfo;
 use bootloader::{BootInfo, entry_point};
 use my_os::{allocator, memory::{self, BootInfoFrameAllocator}, println};
@@ -66,7 +66,22 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
-    let x = Box::new(41);
+    let heap_value = Box::new(41);
+    println!("heap_value at {:?}", heap_value);
+
+    // 動的サイズのベクタを作成
+    let mut vec = Vec::new();
+    for i in 0..500 {
+        vec.push(i);
+    }
+    println!("vec at {:?}", vec.as_slice());
+
+    // 参照カウントされたベクタを作成する-> カウントが0になると解放される
+    let reference_counted = Rc::new(vec![1,2,3]);
+    let cloned_reference = reference_counted.clone();
+    println!("current reference count is {}", Rc::strong_count(&cloned_reference));
+    core::mem::drop(reference_counted);
+    println!("reference count is {} now", Rc::strong_count(&cloned_reference));
 
     #[cfg(test)]
     test_main();
