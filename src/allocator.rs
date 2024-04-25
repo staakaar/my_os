@@ -2,14 +2,17 @@ use x86_64::{structures::paging::{mapper::MapToError, FrameAllocator, Mapper, Pa
 use alloc::alloc::{GlobalAlloc, Layout};
 use core::ptr::null_mut;
 use linked_list_allocator::LockedHeap;
+use bump::BumpAllocator;
 
 pub mod bump;
 
 pub const HEAP_START: usize = 0x_4444_4444_0000;
 pub const HEAP_SIZE: usize = 100 * 1024;
 
+// #[global_allocator]
+// static ALLOCATOR: LockedHeap = LockedHeap::empty();
 #[global_allocator]
-static ALLOCATOR: LockedHeap = LockedHeap::empty();
+static ALLOCATOR: Locked<BumpAllocator> = Locked::new(BumpAllocator::new());
 
 pub struct Dummy;
 
@@ -43,4 +46,18 @@ pub fn init_heap(mapper: &mut impl Mapper<Size4KiB>, frame_allocator: &mut impl 
     }
 
     Ok(())
+}
+
+fn align_up(addr: usize, align: usize) -> usize {
+    let remainder = addr % align;
+    if remainder == 0 {
+        addr
+    } else {
+        addr - remainder + align
+    }
+
+    /// 以下は同じコード
+    fn align_up(addr: usize, align: usize) -> usize {
+        (addr + align - 1) & !(align - 1)
+    }
 }
