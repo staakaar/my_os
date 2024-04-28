@@ -1,5 +1,7 @@
 use core::mem;
-
+use core::ptr;
+use alloc::alloc::{GlobalAlloc, Layout};
+use super::Locked;
 use crate::allocator::align_up;
 
 struct ListNode {
@@ -25,7 +27,7 @@ pub struct LinkedListAllocator {
     head: ListNode,
 }
 
-impl LinkedListAllocator {
+unsafe impl GlobalAlloc for Locked<LinkedListAllocator> {
     pub const fn new() -> Self {
         Self {
             head: ListNode::new(0),
@@ -48,6 +50,44 @@ impl LinkedListAllocator {
         None
     }
 
+    fn alloc_from_region(region: &ListNode, size: usize, align: usize) -> Result<usize, ()> {
+        let alloc_start = align_up(region.start_addr(), align);
+        let alloc_end = alloc_start.checked_add(size).ok_or(())?;
+
+        if alloc_end > region.end_addr() {
+            return Err(());
+        }
+
+        let excess_size = region.end_addr() - alloc_end;
+        if excess_size > 0 && excess_size < mem::size_of::<ListNode>() {
+            return Err(())
+        }
+
+        Ok(alloc_start)
+    }
+
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        let (size, align) = LinkedListAllocator::size_align(layout);
+        let mut allocator = self.lock();
+
+        if let Some((region, alloc_start)) = allocator.find_region(size, align) {
+            let alloc_end = alloc_start.checked_add(size).expect("overflow");
+            let excess_size = region.end_addr() - alloc_end;
+            if excess_size > 0 {
+                allocator.add_free_region(alloc_end, excess_size);
+            }
+            alloc_start as *mut u8
+        } else {
+            ptr::null_mut()
+        }
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        let (size, _) = LinkedListAllocator::size_align(layout);
+
+        self.lock().add_free_region(ptr as usize, size)
+    }
+
     pub unsafe fn init(&mut self, heap_start: usize, heap_size: usize) {
         self.add_free_region(heap_start, heap_size);
     }
@@ -67,3 +107,4 @@ impl LinkedListAllocator {
         self.head.next = Some(&mut *node_ptr)
     }
 }
+
