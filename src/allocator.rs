@@ -3,6 +3,7 @@ use alloc::alloc::{GlobalAlloc, Layout};
 use core::ptr::null_mut;
 use linked_list_allocator::LockedHeap;
 use bump::BumpAllocator;
+use linked_list::LinkedListAllocator;
 
 pub mod bump;
 pub mod linked_list;

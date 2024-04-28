@@ -88,6 +88,11 @@ unsafe impl GlobalAlloc for Locked<LinkedListAllocator> {
         self.lock().add_free_region(ptr as usize, size)
     }
 
+    fn size_align(layout: Layout) -> (usize, usize) {
+        let layout = layout.align_to(mem::align_of::<ListNode>()).expect("adjusting alignment failed").pad_to_align();
+        (size, layout.align())
+    }
+
     pub unsafe fn init(&mut self, heap_start: usize, heap_size: usize) {
         self.add_free_region(heap_start, heap_size);
     }
