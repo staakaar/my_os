@@ -1,6 +1,7 @@
 use alloc::alloc::Layout;
 use alloc::alloc::GlobalAlloc;
 use core::{alloc::GlobalAlloc, ptr};
+use core::{mem, ptr::NonNull};
 
 struct ListNode {
     next: Option<&'static mut ListNode>,
@@ -65,6 +66,23 @@ unsafe impl GlobalAlloc for Locked<FixedSizeBlockAllocator> {
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        todo!();
+        let mut allocator = self.lock();
+        match list_index(&layout) {
+            Some(index) => {
+                let new_node = ListNode {
+                    next: allocator.list_heads[index].take(),
+                };
+                // ブロックがノードを格納できるサイズとアライメントを持っていることを確認
+                assert!(mem::size_of()::<ListNode>() =< BLOCK_SIZES[index]);
+                assert!(mem::align_of()::<ListNode>() =< BLOCK_SIZES[index]);
+                let new_node_ptr = ptr as *mut ListNode;
+                new_node_ptr.write(new_node);
+                allocator.list_heads[index] = Some(&mut *new_node_ptr);
+            }
+            None => {
+                let ptr = NonNull::new(ptr).unwrap();
+                allocator.fallback_allocator_deallocate(ptr, layout);
+            }
+        }
     }
 }
