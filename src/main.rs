@@ -173,3 +173,12 @@ fn trivial_assertion() {
     asseert_eq!(1, 1);
     serial_println!("[ok]");
 }
+
+async fn async_number() -> u32 {
+    42
+}
+
+async fn example_taslk() {
+    let number = async_number().await;
+    println!("async number: {}", number);
+}
